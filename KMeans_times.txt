@@ -1,0 +1,22 @@
+Runtimes of K-Means jobs with rdd.persist() at different locations. Cases yielding empty clusters are not counted
+
+		Trial 1		Trial 2		Trial 3
+None		6.56s		6.54s		6.51s
+Position 1	8.87s		8.84s		8.91s
+Position 2	8.90s		8.87s		8.96s
+Position 3	6.45s		6.41s		6.32s
+Position 4	6.72s		6.88s		6.66s
+
+Here I tried putting the rdd.persist() call in position 4, but only calling it on specific iterations:
+
+		Trial 1		Trial 2		Trial 3
+Iteration 0	6.23s		6.46s		6.30s
+Iteration 1	6.40s		6.38s		6.38s
+Iteration 2	6.25s		6.27s		6.31s
+Iteration 3	6.35s		6.34s		6.42s
+Iteration 4	6.45s		6.31s		6.40s
+Iteration 5	6.47s		6.46s		6.38s
+Iteration 6	6.40s		6.34s		6.24s
+Iteration 7	6.58s		6.35s		6.58s
+Iteration 8	6.54s		6.55s		6.39s
+Iteration 9	6.50s		6.59s		6.54s
