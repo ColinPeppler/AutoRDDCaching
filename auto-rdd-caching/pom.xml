@@ -4,7 +4,7 @@
   <groupId>cs5614.auto_rdd_caching</groupId>
   <artifactId>auto-rdd-caching</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <name>auto-rdd-caching</name>
   <url>http://maven.apache.org</url>
 
