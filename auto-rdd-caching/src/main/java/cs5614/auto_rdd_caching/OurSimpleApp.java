@@ -1,11 +1,13 @@
 package cs5614.auto_rdd_caching;
 
 import com.twitter.chill.Tuple2DoubleDoubleSerializer;
+import org.apache.spark.Dependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
+import org.apache.spark.rdd.RDD;
 import scala.Tuple2;
 import scala.Tuple4;
 
@@ -96,8 +98,9 @@ public class OurSimpleApp
      * Represents an example Spark job (uses a reduceByKey!)
      *
      * @param sc: the SparkContext
+     * @return: the final RDD in the job, useful for lineage
      */
-    private static void job3(JavaSparkContext sc)
+    private static RDD<?> job3(JavaSparkContext sc)
     {
         // Get csv data and filter out header
         // Verbose function
@@ -147,6 +150,7 @@ public class OurSimpleApp
         for (Tuple2<String, Tuple2<Double, Double>> tup: airportDataMaterialized) {
             System.out.println(tup.toString());
         }
+        return JavaPairRDD.toRDD(latLongAvgByCode);
     }
 
     public static void main( String[] args )
@@ -160,7 +164,9 @@ public class OurSimpleApp
 
         job1(sc);
         job2(sc);
-        job3(sc);
+        RDD<?> finalPairRDD = job3(sc);
+        DAG dag = new DAG(finalPairRDD);
+        System.out.println("DAG: " + dag);
 
         System.out.println( "##### The End #####" );
     }
