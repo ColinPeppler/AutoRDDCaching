@@ -1,5 +1,6 @@
 package cs5614.auto_rdd_caching;
 
+import org.apache.spark.Dependency;
 import org.apache.spark.rdd.RDD;
 import java.util.List;
 import java.util.ArrayList;
@@ -21,9 +22,40 @@ public class DAG {
     */
     private Map<RDD<?>, List<RDD<?>>> adjacencyList;
 
+    /**
+     * Get a list of dependencies of this RDD
+     * @param rdd: the RDD to examine
+     * @return: a list of dependencies
+     */
+    private List<Dependency<?>> getDependenciesList(RDD<?> rdd)
+    {
+        return scala.collection.JavaConverters.seqAsJavaList(rdd.dependencies());
+    }
+
+    /**
+     * Convert a list of dependencies to a list of RDDs
+     * @param dependencies: the dependencies
+     * @return a list of RDDs
+     */
+    private List<RDD<?>> dependenciesToRDDs(List<Dependency<?>> dependencies)
+    {
+        List<RDD<?>> output = new ArrayList<>();
+        for (Dependency<?> dependency : dependencies)
+        {
+            output.add(dependency.rdd());
+        }
+        return output;
+    }
+
+    /**
+     * Constructs a DAG
+     * @param lastRDD: the final RDD in the job whose DAG is to be constructed
+     */
     public DAG(RDD<?> lastRDD)
     {
         adjacencyList = new HashMap<>();
+        List<Dependency<?>> dependencies = this.getDependenciesList(lastRDD);
+        adjacencyList.put(lastRDD, this.dependenciesToRDDs(dependencies));
     }
 
     public String toString()
