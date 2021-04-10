@@ -48,18 +48,35 @@ public class DAG {
     }
 
     /**
+     * Recursively adds this RDD's dependencies (and the dependencies of
+     * its dependents) to the adjacency list
+     * @param currRDD: the RDD to be processed right now
+     */
+    private void addDependenciesToDAG(RDD<?> currRDD)
+    {
+        List<RDD<?>> dependents = this.dependenciesToRDDs(this.getDependenciesList(currRDD));
+        if (!this.adjacencyList.containsKey(currRDD))
+        {
+            this.adjacencyList.put(currRDD, dependents);
+        }
+        for (RDD<?> dependent : dependents)
+        {
+            addDependenciesToDAG(dependent);
+        }
+    }
+
+    /**
      * Constructs a DAG
      * @param lastRDD: the final RDD in the job whose DAG is to be constructed
      */
     public DAG(RDD<?> lastRDD)
     {
-        adjacencyList = new HashMap<>();
-        List<Dependency<?>> dependencies = this.getDependenciesList(lastRDD);
-        adjacencyList.put(lastRDD, this.dependenciesToRDDs(dependencies));
+        this.adjacencyList = new HashMap<>();
+        this.addDependenciesToDAG(lastRDD);
     }
 
     public String toString()
     {
-        return adjacencyList.toString();
+        return this.adjacencyList.toString();
     }
 }
