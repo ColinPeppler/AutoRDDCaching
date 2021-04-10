@@ -18,7 +18,9 @@ public class DataReader {
      */
     public static JavaRDD<String> getAirportData(JavaSparkContext sc)
     {
-        return sc.textFile(CSV_PATH + "airports_data.csv").filter(
-                (Function<String, Boolean>) row -> !row.contains("airport_code"));
+        return sc.textFile(CSV_PATH + "airports_data.csv")
+                .filter(
+                        (Function<String, Boolean>) row -> !row.contains("airport_code")
+                );
     }
 }

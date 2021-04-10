@@ -22,8 +22,9 @@ public class OurSimpleApp
      * Represents an example Spark job
      *
      * @param sc: the SparkContext
+     * @return: the final RDD in the job, useful for lineage
      */
-    private static void job1(JavaSparkContext sc)
+    private static RDD<?> job1(JavaSparkContext sc)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -52,14 +53,16 @@ public class OurSimpleApp
         for (Tuple2<String, Tuple4<String, Double, Double, String>> tup: airportDataMaterialized) {
             System.out.println(tup.toString());
         }
+        return JavaPairRDD.toRDD(airportsInAsiaTz);
     }
 
     /**
      * Represents an example Spark job (uses basic iteration!)
      *
      * @param sc: the SparkContext
+     * @return: the final RDD in the job, useful for lineage
      */
-    private static void job2(JavaSparkContext sc)
+    private static RDD<?> job2(JavaSparkContext sc)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -92,6 +95,7 @@ public class OurSimpleApp
         for (Tuple2<Double, Double> tup: airportDataMaterialized) {
             System.out.println(tup.toString());
         }
+        return JavaPairRDD.toRDD(airportLatLong);
     }
 
     /**
@@ -162,11 +166,18 @@ public class OurSimpleApp
                             .setMaster("local[4]"); // runs on 4 worker threads
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        job1(sc);
-        job2(sc);
-        RDD<?> finalPairRDD = job3(sc);
-        DAG dag = new DAG(finalPairRDD);
-        System.out.println("DAG: " + dag);
+        RDD<?> finalPairRDD1 = job1(sc);
+        DAG dag1 = new DAG(finalPairRDD1);
+        System.out.println("DAG: " + dag1);
+        System.out.println(dag1.toLocationsString());
+        RDD<?> finalPairRDD2 = job2(sc);
+        DAG dag2 = new DAG(finalPairRDD2);
+        System.out.println("DAG: " + dag2);
+        System.out.println(dag2.toLocationsString());
+        RDD<?> finalPairRDD3 = job3(sc);
+        DAG dag3 = new DAG(finalPairRDD3);
+        System.out.println("DAG: " + dag3);
+        System.out.println(dag3.toLocationsString());
 
         System.out.println( "##### The End #####" );
     }

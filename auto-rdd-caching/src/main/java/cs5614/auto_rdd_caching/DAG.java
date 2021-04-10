@@ -67,7 +67,7 @@ public class DAG {
 
     /**
      * Constructs a DAG
-     * @param lastRDD: the final RDD in the job whose DAG is to be constructed
+     * @param lastRDD the final RDD in the job whose DAG is to be constructed
      */
     public DAG(RDD<?> lastRDD)
     {
@@ -75,8 +75,51 @@ public class DAG {
         this.addDependenciesToDAG(lastRDD);
     }
 
+    /**
+     * Gets the file location where this RDD appears. Uses toString output
+     * @param rdd the input RDD
+     * @return the file name and line number of the RDD (e.g. OurSimpleApp.java:120)
+     */
+    private String getLocation(RDD<?> rdd)
+    {
+        String[] rddToStringParts = rdd.toString().split(" ");
+        return rddToStringParts[rddToStringParts.length - 1];
+    }
+
     public String toString()
     {
         return this.adjacencyList.toString();
+    }
+
+    /**
+     * Gets a string representation of this DAG that only lists RDD locations
+     * (and uses newlines for readability!)
+     * @return a String representation like the following:
+     * [FILL IN!]
+     * Unless the DAG is empty, in which case "Empty DAG\n" is returned
+     */
+    public String toLocationsString()
+    {
+        if (this.adjacencyList.isEmpty())
+        {
+            return "Empty DAG\n";
+        }
+        String output = "";
+        for (RDD<?> key : this.adjacencyList.keySet())
+        {
+            output += this.getLocation(key);
+            output += "->[";
+            for (RDD<?> dependency : this.adjacencyList.get(key))
+            {
+                output += this.getLocation(dependency);
+                // if not the last dependency
+                if (dependency != this.adjacencyList.get(key).get(this.adjacencyList.get(key).size() - 1))
+                {
+                    output += ", ";
+                }
+            }
+            output += "]\n";
+        }
+        return output;
     }
 }
