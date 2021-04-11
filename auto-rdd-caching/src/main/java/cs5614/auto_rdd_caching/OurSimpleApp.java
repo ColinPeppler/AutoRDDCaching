@@ -257,6 +257,53 @@ public class OurSimpleApp
     }
 
     /**
+     * Represents an example Spark job (uses two tables!)
+     *
+     * @param sc: the SparkContext
+     * @param verbose: if true, produce printed output
+     * @return: the final RDD in the job, useful for lineage
+     */
+    private static RDD<?> job5(JavaSparkContext sc, boolean verbose)
+    {
+        JavaRDD<String> flightsData = DataReader.getFlights(sc);
+        JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
+                flightsData.mapToPair(
+                        row -> new ParseFlightFields().call(row)
+                );
+
+        long n_flights = flightsTuples.count();
+        if (verbose)
+        {
+            System.out.printf("There are %d flights %n", n_flights);
+        }
+
+        JavaPairRDD<String, String> flightidDestArr =
+                flightsTuples.mapToPair(row -> new Tuple2<>(row._1(), row._2()._1() + " to " + row._2()._2()));
+        JavaPairRDD<String, Integer> destArrOne =
+                flightidDestArr.mapToPair(row -> new Tuple2<>(row._2(), 1));
+        JavaPairRDD<String, Integer> destArrCount =
+                destArrOne.reduceByKey(Integer::sum);
+        List<Tuple2<String, Integer>> destArrCountMaterialized = destArrCount.collect();
+        if (verbose)
+        {
+            System.out.println(destArrCountMaterialized);
+        }
+        int n_iters = 100;
+        for (int i = 0; i < n_iters; i++)
+        {
+            destArrCount = destArrCount.mapToPair(
+                    row -> new Tuple2<>(row._1(), (row._2() % 2 == 0) ? (row._2() / 2) : (3 * row._2() + 1))
+            );
+        }
+        List<Tuple2<String, Integer>> destArrCountHailstoneMaterialized = destArrCount.collect();
+        if (verbose)
+        {
+            System.out.println(destArrCountHailstoneMaterialized);
+        }
+        return destArrCount.rdd();
+    }
+
+    /**
      * Runs a job many times and gets the total execution time
      * @param sc the SparkContext
      * @param n_times the number of times to run
@@ -297,6 +344,10 @@ public class OurSimpleApp
         DAG dag4 = new DAG(finalPairRDD4);
         System.out.println("DAG: " + dag4);
         System.out.println(dag4.toLocationsString());
+        RDD<?> finalPairRDD5 = job5(sc, true);
+        DAG dag5 = new DAG(finalPairRDD5);
+        System.out.println("DAG: " + dag5);
+        System.out.println(dag5.toLocationsString());
 
         int n_times = 20;
         long time = timeNCalls(sc, n_times);
