@@ -9,8 +9,10 @@ import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.RDD;
 import scala.Tuple2;
+import scala.Tuple3;
 import scala.Tuple4;
 
+import javax.xml.crypto.Data;
 import java.util.List;
 
 /* The Spark driver class since it has main()
@@ -157,15 +159,85 @@ public class OurSimpleApp
         return JavaPairRDD.toRDD(latLongAvgByCode);
     }
 
-    public static void main( String[] args )
+    /**
+     * Represents an example Spark job (uses two tables!)
+     *
+     * @param sc: the SparkContext
+     * @return: the final RDD in the job, useful for lineage
+     */
+    private static RDD<?> job4(JavaSparkContext sc)
     {
-        System.out.println( "##### The Beginning #####" );
+        JavaRDD<String> flightsData = DataReader.getFlights(sc);
+        JavaRDD<String> airportsData = DataReader.getAirportData(sc);
+        JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
+                flightsData.mapToPair(
+                        row -> new ParseFlightFields().call(row)
+                );
+        JavaPairRDD<String, Tuple4<String, Double, Double, String>> airportsTuples =
+                airportsData.mapToPair(
+                        row -> new ParseAirportFields().call(row)
+                );
+
+        System.out.printf("There are %d flights and %d airports%n",
+                flightsData.count(), airportsData.count());
+
+        JavaPairRDD<String, Tuple3<String, String, String>> scheduledFlights =
+                flightsTuples.filter(row -> row._2()._3().equals("Scheduled"));
+
+        System.out.printf("%d of the flights are scheduled%n", scheduledFlights.count());
+
+        JavaPairRDD<String, String> airportTimezones =
+                airportsTuples.mapToPair(row -> new Tuple2<>(row._1(), row._2()._4()));
+        JavaPairRDD<String, String> arrAirportFlightids =
+                flightsTuples.mapToPair(row -> new Tuple2<>(row._2()._1(), row._1()));
+        JavaPairRDD<String, String> deptAirportFlightids =
+                flightsTuples.mapToPair(row -> new Tuple2<>(row._2()._2(), row._1()));
+        JavaPairRDD<String, Tuple2<String, String>> arrAirportFlightidsTimezones =
+                arrAirportFlightids.join(airportTimezones);
+        JavaPairRDD<String, Tuple2<String, String>> deptAirportFlightidsTimezones =
+                deptAirportFlightids.join(airportTimezones);
+        JavaPairRDD<String, String> flightidArrTimezone =
+                arrAirportFlightidsTimezones.mapToPair(row -> new Tuple2<>(row._2()._1(), row._2()._2()));
+        JavaPairRDD<String, String> flightidDeptTimezone =
+                deptAirportFlightidsTimezones.mapToPair(row -> new Tuple2<>(row._2()._1(), row._2()._2()));
+        JavaPairRDD<String, Tuple2<String, String>> scheduledFlightidAirports =
+                scheduledFlights.mapToPair(row -> new Tuple2<>(row._1(), new Tuple2<>(row._2()._1(), row._2()._2())));
+        JavaPairRDD<String, Tuple2<String, Tuple2<String, String>>> flightidArrTimezoneAirports =
+                flightidArrTimezone.join(scheduledFlightidAirports);
+        JavaPairRDD<String, Tuple2<String, String>> flightidArrTimezoneDeptAirport =
+                flightidArrTimezoneAirports.mapToPair(row -> new Tuple2<>(row._1(),
+                        new Tuple2<>(row._2()._1(), row._2()._2()._2())));
+        JavaPairRDD<String, Tuple2<String, Tuple2<String, String>>> flightidDeptTimezoneArrTimezoneDeptAirport =
+                flightidDeptTimezone.join(flightidArrTimezoneDeptAirport);
+        JavaPairRDD<String, Tuple2<String, String>> flightidDeptTimezoneArrTimezone =
+                flightidDeptTimezoneArrTimezoneDeptAirport.mapToPair(
+                        row -> new Tuple2<>(row._1(), new Tuple2<>(row._2()._1(), row._2()._2()._1()))
+                );
+        JavaPairRDD<String, Boolean> flightidSameTimezone =
+                flightidDeptTimezoneArrTimezone.mapToPair(row ->
+                        new Tuple2<>(row._1(), row._2()._1().equals(row._2()._2())));
+        JavaPairRDD<String, Boolean> flightidOnlySameTimezone =
+                flightidSameTimezone.filter(Tuple2::_2);
+        JavaRDD<String> flightidOnlySameTimezoneCol1 =
+                flightidOnlySameTimezone.map(Tuple2::_1);
+
+        System.out.printf("%d Scheduled flights have a departure timezone equal to the arrival timezone%n",
+                flightidOnlySameTimezoneCol1.count());
+        System.out.println("Here they are:");
+        System.out.println(flightidOnlySameTimezoneCol1.collect());
+
+        return flightidOnlySameTimezoneCol1.rdd();
+    }
+
+    public static void main( String[] args ) {
+        System.out.println("##### The Beginning #####");
 
         SparkConf conf = new SparkConf()
-                            .setAppName("Our Simple App")
-                            .setMaster("local[4]"); // runs on 4 worker threads
+                .setAppName("Our Simple App")
+                .setMaster("local[4]"); // runs on 4 worker threads
         JavaSparkContext sc = new JavaSparkContext(conf);
 
+        /*
         RDD<?> finalPairRDD1 = job1(sc);
         DAG dag1 = new DAG(finalPairRDD1);
         System.out.println("DAG: " + dag1);
@@ -178,14 +250,19 @@ public class OurSimpleApp
         DAG dag3 = new DAG(finalPairRDD3);
         System.out.println("DAG: " + dag3);
         System.out.println(dag3.toLocationsString());
+        */
+        RDD<?> finalPairRDD4 = job4(sc);
+        DAG dag4 = new DAG(finalPairRDD4);
+        System.out.println("DAG: " + dag4);
+        System.out.println(dag4.toLocationsString());
 
-        System.out.println( "##### The End #####" );
+        System.out.println("##### The End #####");
     }
 
     /* Implement class with call() as an alternative for inline functions */
+    /* Result has (airport_code, (airport_name, long, lat, timezone)) rows */
     static class ParseAirportFields implements Function<String, Tuple2<String, Tuple4<String, Double, Double, String>>>
     {
-        /* call() maps row to (String, (String, Double, Double, String)) */
         public Tuple2<String, Tuple4<String, Double, Double, String>> call(String row) {
             String[] nsplit = row.split(",");
             String airportCode = nsplit[0];
@@ -195,6 +272,21 @@ public class OurSimpleApp
             String timezone = nsplit[5];
             Tuple4<String, Double, Double, String> value = new Tuple4<>(airportName, longCoord, latCoord, timezone);
             return new Tuple2<>(airportCode, value);
+        }
+    }
+
+    /* Implement class with call() as an alternative for inline functions */
+    /* Result has (flight_id, (departure_airport, arrival_airport, status)) rows */
+    static class ParseFlightFields implements Function<String, Tuple2<String, Tuple3<String, String, String>>>
+    {
+        public Tuple2<String, Tuple3<String, String, String>> call(String row) {
+            String[] nsplit = row.split(",");
+            String flightid = nsplit[0];
+            String departure_airport = nsplit[4];
+            String arrival_airport = nsplit[5];
+            String status = nsplit[6];
+            Tuple3<String, String, String> value = new Tuple3(departure_airport, arrival_airport, status);
+            return new Tuple2<>(flightid, value);
         }
     }
 }
