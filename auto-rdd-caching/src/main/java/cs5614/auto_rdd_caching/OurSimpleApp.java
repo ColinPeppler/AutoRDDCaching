@@ -327,6 +327,7 @@ public class OurSimpleApp
                 .setAppName("Our Simple App")
                 .setMaster("local[4]"); // runs on 4 worker threads
         JavaSparkContext sc = new JavaSparkContext(conf);
+        sc.setLogLevel("ERROR");
 
         RDD<?> finalPairRDD1 = job1(sc, true);
         DAG dag1 = new DAG(finalPairRDD1);
