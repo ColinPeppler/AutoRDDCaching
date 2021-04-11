@@ -8,6 +8,7 @@ import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.RDD;
+import scala.Tuple1;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.Tuple4;
@@ -24,9 +25,10 @@ public class OurSimpleApp
      * Represents an example Spark job
      *
      * @param sc: the SparkContext
+     * @param verbose: if true, produce printed output
      * @return: the final RDD in the job, useful for lineage
      */
-    private static RDD<?> job1(JavaSparkContext sc)
+    private static RDD<?> job1(JavaSparkContext sc, boolean verbose)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -50,10 +52,14 @@ public class OurSimpleApp
                 airportsInAsiaTz.collect();
 
         long nrows = airportData.count();
-        System.out.printf("# of airports in original csv: %d \n", nrows);
+        if (verbose) {
+            System.out.printf("# of airports in original csv: %d \n", nrows);
+        }
 
-        for (Tuple2<String, Tuple4<String, Double, Double, String>> tup: airportDataMaterialized) {
-            System.out.println(tup.toString());
+        if (verbose) {
+            for (Tuple2<String, Tuple4<String, Double, Double, String>> tup : airportDataMaterialized) {
+                System.out.println(tup.toString());
+            }
         }
         return JavaPairRDD.toRDD(airportsInAsiaTz);
     }
@@ -62,9 +68,10 @@ public class OurSimpleApp
      * Represents an example Spark job (uses basic iteration!)
      *
      * @param sc: the SparkContext
+     * @param verbose: if true, produce printed output
      * @return: the final RDD in the job, useful for lineage
      */
-    private static RDD<?> job2(JavaSparkContext sc)
+    private static RDD<?> job2(JavaSparkContext sc, boolean verbose)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -92,10 +99,14 @@ public class OurSimpleApp
                 airportLatLong.collect();
 
         long nrows = airportData.count();
-        System.out.printf("# of airports in original csv: %d \n", nrows);
+        if (verbose) {
+            System.out.printf("# of airports in original csv: %d \n", nrows);
+        }
 
-        for (Tuple2<Double, Double> tup: airportDataMaterialized) {
-            System.out.println(tup.toString());
+        if (verbose) {
+            for (Tuple2<Double, Double> tup : airportDataMaterialized) {
+                System.out.println(tup.toString());
+            }
         }
         return JavaPairRDD.toRDD(airportLatLong);
     }
@@ -104,9 +115,10 @@ public class OurSimpleApp
      * Represents an example Spark job (uses a reduceByKey!)
      *
      * @param sc: the SparkContext
+     * @param verbose: if true, produce printed output
      * @return: the final RDD in the job, useful for lineage
      */
-    private static RDD<?> job3(JavaSparkContext sc)
+    private static RDD<?> job3(JavaSparkContext sc, boolean verbose)
     {
         // Get csv data and filter out header
         // Verbose function
@@ -151,10 +163,14 @@ public class OurSimpleApp
                 latLongAvgByCode.collect();
 
         long nrows = airportData.count();
-        System.out.printf("# of airports in original csv: %d \n", nrows);
+        if (verbose) {
+            System.out.printf("# of airports in original csv: %d \n", nrows);
+        }
 
-        for (Tuple2<String, Tuple2<Double, Double>> tup: airportDataMaterialized) {
-            System.out.println(tup.toString());
+        if (verbose) {
+            for (Tuple2<String, Tuple2<Double, Double>> tup : airportDataMaterialized) {
+                System.out.println(tup.toString());
+            }
         }
         return JavaPairRDD.toRDD(latLongAvgByCode);
     }
@@ -163,9 +179,10 @@ public class OurSimpleApp
      * Represents an example Spark job (uses two tables!)
      *
      * @param sc: the SparkContext
+     * @param verbose: if true, produce printed output
      * @return: the final RDD in the job, useful for lineage
      */
-    private static RDD<?> job4(JavaSparkContext sc)
+    private static RDD<?> job4(JavaSparkContext sc, boolean verbose)
     {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaRDD<String> airportsData = DataReader.getAirportData(sc);
@@ -178,13 +195,20 @@ public class OurSimpleApp
                         row -> new ParseAirportFields().call(row)
                 );
 
-        System.out.printf("There are %d flights and %d airports%n",
-                flightsData.count(), airportsData.count());
+        long flightRows = flightsData.count();
+        long airportRows = airportsData.count();
+        if (verbose) {
+            System.out.printf("There are %d flights and %d airports%n",
+                    flightRows, airportRows);
+        }
 
         JavaPairRDD<String, Tuple3<String, String, String>> scheduledFlights =
                 flightsTuples.filter(row -> row._2()._3().equals("Scheduled"));
 
-        System.out.printf("%d of the flights are scheduled%n", scheduledFlights.count());
+        long scheduledFlightRows = scheduledFlights.count();
+        if (verbose) {
+            System.out.printf("%d of the flights are scheduled%n", scheduledFlightRows);
+        }
 
         JavaPairRDD<String, String> airportTimezones =
                 airportsTuples.mapToPair(row -> new Tuple2<>(row._1(), row._2()._4()));
@@ -221,12 +245,32 @@ public class OurSimpleApp
         JavaRDD<String> flightidOnlySameTimezoneCol1 =
                 flightidOnlySameTimezone.map(Tuple2::_1);
 
-        System.out.printf("%d Scheduled flights have a departure timezone equal to the arrival timezone%n",
-                flightidOnlySameTimezoneCol1.count());
-        System.out.println("Here they are:");
-        System.out.println(flightidOnlySameTimezoneCol1.collect());
-
+        long scheduledSameTimezoneRows = flightidOnlySameTimezoneCol1.count();
+        List<String> scheduledSameTimezone = flightidOnlySameTimezoneCol1.collect();
+        if (verbose) {
+            System.out.printf("%d Scheduled flights have a departure timezone equal to the arrival timezone%n",
+                    scheduledSameTimezoneRows);
+            System.out.println("Here they are:");
+            System.out.println(scheduledSameTimezone);
+        }
         return flightidOnlySameTimezoneCol1.rdd();
+    }
+
+    /**
+     * Runs a job many times and gets the total execution time
+     * @param sc the SparkContext
+     * @param n_times the number of times to run
+     * @return the total execution time in nanoseconds
+     */
+    public static long timeNCalls(JavaSparkContext sc, int n_times)
+    {
+        long startTime = System.nanoTime();
+        for (int i = 0; i < n_times; i++)
+        {
+            job4(sc, false); // insert function call here
+        }
+        long endTime = System.nanoTime();
+        return endTime - startTime;
     }
 
     public static void main( String[] args ) {
@@ -237,24 +281,26 @@ public class OurSimpleApp
                 .setMaster("local[4]"); // runs on 4 worker threads
         JavaSparkContext sc = new JavaSparkContext(conf);
 
-        /*
-        RDD<?> finalPairRDD1 = job1(sc);
+        RDD<?> finalPairRDD1 = job1(sc, true);
         DAG dag1 = new DAG(finalPairRDD1);
         System.out.println("DAG: " + dag1);
         System.out.println(dag1.toLocationsString());
-        RDD<?> finalPairRDD2 = job2(sc);
+        RDD<?> finalPairRDD2 = job2(sc, true);
         DAG dag2 = new DAG(finalPairRDD2);
         System.out.println("DAG: " + dag2);
         System.out.println(dag2.toLocationsString());
-        RDD<?> finalPairRDD3 = job3(sc);
+        RDD<?> finalPairRDD3 = job3(sc, true);
         DAG dag3 = new DAG(finalPairRDD3);
         System.out.println("DAG: " + dag3);
         System.out.println(dag3.toLocationsString());
-        */
-        RDD<?> finalPairRDD4 = job4(sc);
+        RDD<?> finalPairRDD4 = job4(sc, true);
         DAG dag4 = new DAG(finalPairRDD4);
         System.out.println("DAG: " + dag4);
         System.out.println(dag4.toLocationsString());
+
+        int n_times = 20;
+        long time = timeNCalls(sc, n_times);
+        System.out.printf("%d executions of job4 takes %d nanoseconds%n", n_times, time);
 
         System.out.println("##### The End #####");
     }
