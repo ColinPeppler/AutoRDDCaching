@@ -1,20 +1,18 @@
 package cs5614.auto_rdd_caching;
 
-import com.twitter.chill.Tuple2DoubleDoubleSerializer;
-import org.apache.spark.Dependency;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
 import org.apache.spark.rdd.RDD;
-import scala.Tuple1;
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.Tuple4;
 
-import javax.xml.crypto.Data;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /* The Spark driver class since it has main()
  * run `mvn package`, then submit jar file to spark
@@ -24,11 +22,12 @@ public class OurSimpleApp
     /**
      * Represents an example Spark job
      *
-     * @param sc: the SparkContext
-     * @param verbose: if true, produce printed output
-     * @return: the final RDD in the job, useful for lineage
+     * @param sc the SparkContext
+     * @param verbose if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    private static RDD<?> job1(JavaSparkContext sc, boolean verbose)
+    private static Map<RDD<?>, Integer> job1(JavaSparkContext sc, boolean verbose)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -61,17 +60,22 @@ public class OurSimpleApp
                 System.out.println(tup.toString());
             }
         }
-        return JavaPairRDD.toRDD(airportsInAsiaTz);
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(airportData.rdd(), 1);
+        actionRDDs.put(airportsInAsiaTz.rdd(), 1);
+        return actionRDDs;
     }
 
     /**
      * Represents an example Spark job (uses basic iteration!)
      *
-     * @param sc: the SparkContext
-     * @param verbose: if true, produce printed output
-     * @return: the final RDD in the job, useful for lineage
+     * @param sc the SparkContext
+     * @param verbose if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    private static RDD<?> job2(JavaSparkContext sc, boolean verbose)
+    private static Map<RDD<?>, Integer> job2(JavaSparkContext sc, boolean verbose)
     {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -108,17 +112,22 @@ public class OurSimpleApp
                 System.out.println(tup.toString());
             }
         }
-        return JavaPairRDD.toRDD(airportLatLong);
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(airportLatLong.rdd(), 1);
+        actionRDDs.put(airportData.rdd(), 1);
+        return actionRDDs;
     }
 
     /**
      * Represents an example Spark job (uses a reduceByKey!)
      *
-     * @param sc: the SparkContext
-     * @param verbose: if true, produce printed output
-     * @return: the final RDD in the job, useful for lineage
+     * @param sc the SparkContext
+     * @param verbose if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    private static RDD<?> job3(JavaSparkContext sc, boolean verbose)
+    private static Map<RDD<?>, Integer> job3(JavaSparkContext sc, boolean verbose)
     {
         // Get csv data and filter out header
         // Verbose function
@@ -172,17 +181,22 @@ public class OurSimpleApp
                 System.out.println(tup.toString());
             }
         }
-        return JavaPairRDD.toRDD(latLongAvgByCode);
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(latLongAvgByCode.rdd(), 1);
+        actionRDDs.put(airportData.rdd(), 1);
+        return actionRDDs;
     }
 
     /**
      * Represents an example Spark job (uses two tables!)
      *
-     * @param sc: the SparkContext
-     * @param verbose: if true, produce printed output
-     * @return: the final RDD in the job, useful for lineage
+     * @param sc the SparkContext
+     * @param verbose if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    private static RDD<?> job4(JavaSparkContext sc, boolean verbose)
+    private static Map<RDD<?>, Integer> job4(JavaSparkContext sc, boolean verbose)
     {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaRDD<String> airportsData = DataReader.getAirportData(sc);
@@ -253,17 +267,24 @@ public class OurSimpleApp
             System.out.println("Here they are:");
             System.out.println(scheduledSameTimezone);
         }
-        return flightidOnlySameTimezoneCol1.rdd();
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(flightsData.rdd(), 1);
+        actionRDDs.put(airportsData.rdd(), 1);
+        actionRDDs.put(scheduledFlights.rdd(), 1);
+        actionRDDs.put(flightidOnlySameTimezoneCol1.rdd(), 2);
+        return actionRDDs;
     }
 
     /**
      * Represents an example Spark job (uses two tables!)
      *
-     * @param sc: the SparkContext
-     * @param verbose: if true, produce printed output
-     * @return: the final RDD in the job, useful for lineage
+     * @param sc the SparkContext
+     * @param verbose if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    private static RDD<?> job5(JavaSparkContext sc, boolean verbose)
+    private static Map<RDD<?>, Integer> job5(JavaSparkContext sc, boolean verbose)
     {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
@@ -300,7 +321,11 @@ public class OurSimpleApp
         {
             System.out.println(destArrCountHailstoneMaterialized);
         }
-        return destArrCount.rdd();
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(flightsTuples.rdd(), 1);
+        actionRDDs.put(destArrCount.rdd(), 2);
+        return actionRDDs;
     }
 
     /**
@@ -329,24 +354,24 @@ public class OurSimpleApp
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
 
-        RDD<?> finalPairRDD1 = job1(sc, true);
-        DAG dag1 = new DAG(finalPairRDD1);
+        Map<RDD<?>, Integer> actionRDDs1 = job1(sc, true);
+        DAG dag1 = new DAG(actionRDDs1);
         System.out.println("DAG: " + dag1);
         System.out.println(dag1.toLocationsString());
-        RDD<?> finalPairRDD2 = job2(sc, true);
-        DAG dag2 = new DAG(finalPairRDD2);
+        Map<RDD<?>, Integer> actionRDDs2 = job2(sc, true);
+        DAG dag2 = new DAG(actionRDDs2);
         System.out.println("DAG: " + dag2);
         System.out.println(dag2.toLocationsString());
-        RDD<?> finalPairRDD3 = job3(sc, true);
-        DAG dag3 = new DAG(finalPairRDD3);
+        Map<RDD<?>, Integer> actionRDDs3 = job3(sc, true);
+        DAG dag3 = new DAG(actionRDDs3);
         System.out.println("DAG: " + dag3);
         System.out.println(dag3.toLocationsString());
-        RDD<?> finalPairRDD4 = job4(sc, true);
-        DAG dag4 = new DAG(finalPairRDD4);
+        Map<RDD<?>, Integer> actionRDDs4 = job4(sc, true);
+        DAG dag4 = new DAG(actionRDDs4);
         System.out.println("DAG: " + dag4);
         System.out.println(dag4.toLocationsString());
-        RDD<?> finalPairRDD5 = job5(sc, true);
-        DAG dag5 = new DAG(finalPairRDD5);
+        Map<RDD<?>, Integer> actionRDDs5 = job5(sc, true);
+        DAG dag5 = new DAG(actionRDDs5);
         System.out.println("DAG: " + dag5);
         System.out.println(dag5.toLocationsString());
 
@@ -383,7 +408,8 @@ public class OurSimpleApp
             String departure_airport = nsplit[4];
             String arrival_airport = nsplit[5];
             String status = nsplit[6];
-            Tuple3<String, String, String> value = new Tuple3(departure_airport, arrival_airport, status);
+            Tuple3<String, String, String> value =
+                    new Tuple3<>(departure_airport, arrival_airport, status);
             return new Tuple2<>(flightid, value);
         }
     }
