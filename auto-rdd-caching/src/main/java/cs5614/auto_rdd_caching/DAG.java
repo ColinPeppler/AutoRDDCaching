@@ -2,10 +2,8 @@ package cs5614.auto_rdd_caching;
 
 import org.apache.spark.Dependency;
 import org.apache.spark.rdd.RDD;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
+
+import java.util.*;
 
 /**
  * Represents a directed acyclic graph
@@ -20,8 +18,13 @@ public class DAG {
     ...
     }
     */
-    private final Map<RDD<?>, List<RDD<?>>> adjacencyList;
-    private final Map<RDD<?>, Integer> actionRDDs;
+    private Map<RDD<?>, List<RDD<?>>> adjacencyList;
+    private Map<RDD<?>, Integer> actionRDDs;
+
+    /**
+     * Maps for storing RDD node attributes (e.g. number of actions or size)
+     */
+    private Map<RDD<?>, Integer> rddToActionCount;
 
     /**
      * Get a list of dependencies of this RDD
@@ -119,7 +122,7 @@ public class DAG {
      * @param useLocationIdentifier: determines whether to use location or
      *                               unique identifier to label each RDD
      * @return a String representation like the following:
-     * parentRDD -> [depRDD1, depRDD2, ...]
+     * childRDD -> [parentRDD1, parentRDD2, ...]
      * Unless the DAG is empty, in which case "Empty DAG\n" is returned
      */
     private String toStringImpl(boolean useLocationIdentifier)
@@ -182,5 +185,74 @@ public class DAG {
     public String toRDDIdentifierString()
     {
         return this.toStringImpl(false);
+    }
+
+
+    /**
+     * Sorts the DAG so that the keys of the adjacency list are in sorted order
+     * determined by the RDD id. This function's purpose is to assist in
+     * debugging and to improve the readability of the DAG.
+     */
+    public void sortDAGByID()
+    {
+        Map<RDD<?>, List<RDD<?>>> sortedMap = new TreeMap<RDD<?>, List<RDD<?>>>(
+            (RDD<?> rdd1, RDD<?> rdd2)->Integer.compare(rdd1.id(), rdd2.id())
+        );
+        for(Map.Entry<RDD<?>, List<RDD<?>>> entry: this.adjacencyList.entrySet())
+        {
+            sortedMap.put(entry.getKey(), entry.getValue());
+        }
+        this.adjacencyList = sortedMap;
+    }
+
+
+    /**
+     * DAG Traversal Begins Here
+     */
+    public void mapRDDToAttributes()
+    {
+        this.rddToActionCount = new HashMap<RDD<?>, Integer>();
+        // populate maps with RDDs in DAG
+        for(RDD<?> rdd: adjacencyList.keySet()) {
+            this.rddToActionCount.put(rdd, 0);
+        }
+        // update map values
+        for(Map.Entry<RDD<?>, Integer> entry: actionRDDs.entrySet()) {
+            RDD<?> rdd = entry.getKey();
+            int nactions = entry.getValue();
+            Set<RDD<?>> visitedRDDs = new HashSet<>();
+
+            updateAncestorActionsCount(rdd, nactions, visitedRDDs);
+        }
+    }
+
+
+    /**
+     * Given an RDD, update all that RDD's ancestors mapping to number of actions
+     * @param rdd: source RDD
+     * @param nactions: number of actions to update
+     * @param visitedRDDs: a set to avoid updating ancestors more than necessary
+     * If RDD_A is the ancestor of RDD_B and collect() was called on RDD_B
+     * 5 times then the rddToActionsCount map is updated to add 5 counts to
+     * RDD_A's value count.
+     */
+    private void updateAncestorActionsCount(RDD<?> rdd, int nactions, Set<RDD<?>> visitedRDDs)
+    {
+        if (!visitedRDDs.contains(rdd)) {
+            int actionCount = nactions + this.rddToActionCount.get(rdd);
+            this.rddToActionCount.put(rdd, actionCount);
+            visitedRDDs.add(rdd);
+        }
+        for (RDD<?> dependency : this.adjacencyList.get(rdd))
+        {
+            updateAncestorActionsCount(dependency, nactions, visitedRDDs);
+        }
+    }
+
+    public void printDAGWithAttributes() {
+        System.out.println("### Printing DAG With Attributes ###");
+        for(Map.Entry<RDD<?>, Integer> entry: this.rddToActionCount.entrySet()) {
+            System.out.println(getRDDIdentifier(entry.getKey()) + " --> " + entry.getValue());
+        }
     }
 }
