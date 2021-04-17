@@ -37,4 +37,12 @@ public class DataReader {
                         (Function<String, Boolean>) row -> !row.contains("flight_id")
                 );
     }
+    
+    public static JavaRDD<String> getSeats(JavaSparkContext sc)
+    {
+        return sc.textFile(DATA_DIR + "seats.csv")
+                .filter(
+                        (Function<String, Boolean>) row -> !row.contains("aircraft_code")
+                );
+    }
 }

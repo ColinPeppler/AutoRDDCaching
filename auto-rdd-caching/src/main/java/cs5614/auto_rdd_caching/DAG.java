@@ -20,7 +20,8 @@ public class DAG {
     ...
     }
     */
-    private Map<RDD<?>, List<RDD<?>>> adjacencyList;
+    private final Map<RDD<?>, List<RDD<?>>> adjacencyList;
+    private final Map<RDD<?>, Integer> actionRDDs;
 
     /**
      * Get a list of dependencies of this RDD
@@ -67,12 +68,17 @@ public class DAG {
 
     /**
      * Constructs a DAG
-     * @param lastRDD the final RDD in the job whose DAG is to be constructed
+     * @param actionRDDs Map of RDDs in the job that had actions called on them,
+     * useful for lineage. The RDD reference is mapped to the number of actions called on it
      */
-    public DAG(RDD<?> lastRDD)
+    public DAG(Map<RDD<?>, Integer> actionRDDs)
     {
         this.adjacencyList = new HashMap<>();
-        this.addDependenciesToDAG(lastRDD);
+        this.actionRDDs = actionRDDs;
+        for (RDD<?> actionRDD : actionRDDs.keySet())
+        {
+             this.addDependenciesToDAG(actionRDD);
+        }
     }
 
     /**
@@ -104,22 +110,22 @@ public class DAG {
         {
             return "Empty DAG\n";
         }
-        String output = "";
+        StringBuilder output = new StringBuilder();
         for (RDD<?> key : this.adjacencyList.keySet())
         {
-            output += this.getLocation(key);
-            output += "->[";
+            output.append(this.getLocation(key));
+            output.append("->[");
             for (RDD<?> dependency : this.adjacencyList.get(key))
             {
-                output += this.getLocation(dependency);
+                output.append(this.getLocation(dependency));
                 // if not the last dependency
                 if (dependency != this.adjacencyList.get(key).get(this.adjacencyList.get(key).size() - 1))
                 {
-                    output += ", ";
+                    output.append(", ");
                 }
             }
-            output += "]\n";
+            output.append("]\n");
         }
-        return output;
+        return output.toString();
     }
 }
