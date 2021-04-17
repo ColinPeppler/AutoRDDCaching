@@ -87,8 +87,7 @@ public class ExampleSparkJobs {
 
         // 2. Convert data to a tuple (String, (String, Double, Double, String))
         JavaPairRDD<String, Tuple4<String, Double, Double, String>> airportTuples =
-            airportData.mapToPair(row -> new ParseAirportFields().call(row)); // Lambda
-                                                                              // function
+            airportData.mapToPair(row -> new ParseAirportFields().call(row));
 
         // 3. Get just lat/long data
         JavaPairRDD<Double, Double> airportLatLong = airportTuples.mapToPair(
@@ -142,8 +141,7 @@ public class ExampleSparkJobs {
 
         // Convert data to a tuple (String, (String, Double, Double, String))
         JavaPairRDD<String, Tuple4<String, Double, Double, String>> airportTuples =
-            airportData.mapToPair(row -> new ParseAirportFields().call(row)); // Lambda
-                                                                              // function
+            airportData.mapToPair(row -> new ParseAirportFields().call(row));
 
         // Use first letter only of code
         airportTuples = airportTuples.mapToPair(row -> new Tuple2<>(row._1()

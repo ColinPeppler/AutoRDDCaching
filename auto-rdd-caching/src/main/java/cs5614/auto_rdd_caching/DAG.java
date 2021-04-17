@@ -84,12 +84,28 @@ public class DAG {
     /**
      * Gets the file location where this RDD appears. Uses toString output
      * @param rdd the input RDD
-     * @return the file name and line number of the RDD (e.g. OurSimpleApp.java:120)
+     * @return the file name and line number of the RDD (e.g. ExampleSparkJobs.java:120)
      */
     private String getLocation(RDD<?> rdd)
     {
         String[] rddToStringParts = rdd.toString().split(" ");
         return rddToStringParts[rddToStringParts.length - 1];
+    }
+
+    /**
+     * Gets a unique name to identify an RDD
+     * @param rdd the input RDD
+     * @return Type of RDD and RDD id (e.g. MapPartitionsRDD[3])
+     */
+    private String getRDDIdentifier(RDD<?> rdd)
+    {
+        String[] rddToStringParts = rdd.toString().split(" ");
+        // determine where RDD identifier is located
+        if (rddToStringParts.length == 5)
+        {
+            return rddToStringParts[0];
+        }
+        return rddToStringParts[1];
     }
 
     public String toString()
@@ -98,13 +114,15 @@ public class DAG {
     }
 
     /**
-     * Gets a string representation of this DAG that only lists RDD locations
-     * (and uses newlines for readability!)
+     * Gets a string representation of this DAG that identifies RDD's by their
+     * location or unique identifier. Includes newlines for readability.
+     * @param useLocationIdentifier: determines whether to use location or
+     *                               unique identifier to label each RDD
      * @return a String representation like the following:
-     * [FILL IN!]
+     * parentRDD -> [depRDD1, depRDD2, ...]
      * Unless the DAG is empty, in which case "Empty DAG\n" is returned
      */
-    public String toLocationsString()
+    private String toStringImpl(boolean useLocationIdentifier)
     {
         if (this.adjacencyList.isEmpty())
         {
@@ -113,11 +131,28 @@ public class DAG {
         StringBuilder output = new StringBuilder();
         for (RDD<?> key : this.adjacencyList.keySet())
         {
-            output.append(this.getLocation(key));
+            // append string that identifies the current RDD<?> key
+            if (useLocationIdentifier)
+            {
+                output.append(this.getLocation(key));
+            }
+            else
+            {
+                output.append(this.getRDDIdentifier(key));
+            }
             output.append("->[");
+
             for (RDD<?> dependency : this.adjacencyList.get(key))
             {
-                output.append(this.getLocation(dependency));
+                // append string that identifies the dependencies
+                if (useLocationIdentifier)
+                {
+                    output.append(this.getLocation(dependency));
+                }
+                else
+                {
+                    output.append(this.getRDDIdentifier(dependency));
+                }
                 // if not the last dependency
                 if (dependency != this.adjacencyList.get(key).get(this.adjacencyList.get(key).size() - 1))
                 {
@@ -127,5 +162,25 @@ public class DAG {
             output.append("]\n");
         }
         return output.toString();
+    }
+
+    /**
+     * Gets a string representation of this DAG that only lists RDD locations
+     * (e.g. ExampleSparkJobs.java.120)
+     * @return a String representation like the following:
+     */
+    public String toLocationsString()
+    {
+        return this.toStringImpl(true);
+    }
+
+    /**
+     * Gets a string representation of this DAG that uses a unique RDD
+     * identifier (e.g. ShuffledRDD[6])
+     * @return a String representation like the following:
+     */
+    public String toRDDIdentifierString()
+    {
+        return this.toStringImpl(false);
     }
 }

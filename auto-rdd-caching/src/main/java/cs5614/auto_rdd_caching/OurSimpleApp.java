@@ -39,6 +39,7 @@ public class OurSimpleApp {
         DAG dag5 = new DAG(actionRDDs5);
         System.out.println("DAG: " + dag5);
         System.out.println(dag5.toLocationsString());
+        System.out.println(dag5.toRDDIdentifierString());
 
         int n_times = 20;
         long time = ExampleSparkJobs.timeNCalls(sc, n_times);
