@@ -2,6 +2,7 @@ package cs5614.auto_rdd_caching;
 
 import org.apache.spark.Dependency;
 import org.apache.spark.rdd.RDD;
+import org.apache.spark.util.SizeEstimator;
 
 import java.util.*;
 
@@ -25,6 +26,7 @@ public class DAG {
      * Maps for storing RDD node attributes (e.g. number of actions or size)
      */
     private Map<RDD<?>, Integer> rddToActionCount;
+    private Map<RDD<?>, Long> rddToSize;
 
     /**
      * Get a list of dependencies of this RDD
@@ -213,19 +215,21 @@ public class DAG {
     {
         this.rddToActionCount = new HashMap<RDD<?>, Integer>();
         // populate maps with RDDs in DAG
-        for(RDD<?> rdd: adjacencyList.keySet()) {
+        for(RDD<?> rdd: adjacencyList.keySet())
+        {
             this.rddToActionCount.put(rdd, 0);
         }
-        // update map values
-        for(Map.Entry<RDD<?>, Integer> entry: actionRDDs.entrySet()) {
+
+        // update/set map for attributes
+        for(Map.Entry<RDD<?>, Integer> entry: actionRDDs.entrySet())
+        {
             RDD<?> rdd = entry.getKey();
             int nactions = entry.getValue();
             Set<RDD<?>> visitedRDDs = new HashSet<>();
-
-            updateAncestorActionsCount(rdd, nactions, visitedRDDs);
+            this.updateAncestorActionsCount(rdd, nactions, visitedRDDs);
         }
+        this.mapAllRDDsToSize();
     }
-
 
     /**
      * Given an RDD, update all that RDD's ancestors mapping to number of actions
@@ -249,10 +253,58 @@ public class DAG {
         }
     }
 
-    public void printDAGWithAttributes() {
-        System.out.println("### Printing DAG With Attributes ###");
-        for(Map.Entry<RDD<?>, Integer> entry: this.rddToActionCount.entrySet()) {
-            System.out.println(getRDDIdentifier(entry.getKey()) + " --> " + entry.getValue());
+    /**
+     * For each RDD, add a map entry to rddToSize with the rdd as the key and
+     * the value being the cumulative size which includes the total size of the
+     * rdd's ancestors and the rdd's own size.
+     */
+    private void mapAllRDDsToSize()
+    {
+        this.rddToSize = new HashMap<>();
+        for(RDD<?> rdd: this.adjacencyList.keySet())
+        {
+            // includes the total size of all ancestors and the rdd's own size
+            long cumulativeSize =
+                this.getAncestors(rdd)
+                .stream()
+                .mapToLong(ancestor -> SizeEstimator.estimate(ancestor))
+                .reduce(0, (a,b)->a+b)
+                + SizeEstimator.estimate(rdd);
+            this.rddToSize.put(rdd, cumulativeSize);
         }
+    }
+
+
+    /**
+     * Gets all the ancestors of an RDD
+     * @param rdd: RDD whose ancestors that are being found
+     * @return: a List<RDD<?>> containing all the ancestors for rdd
+     */
+    private List<RDD<?>> getAncestors(RDD<?> rdd) {
+        Set<RDD<?>> ancestors = new HashSet<>();
+        for(RDD<?> ancestor: this.adjacencyList.get(rdd))
+        {
+            ancestors.add(ancestor);
+            ancestors.addAll( getAncestors(ancestor) );
+        }
+        return new ArrayList<>(ancestors);
+    }
+
+    /**
+     * toString method that includes attributes
+     * @return a string that contains id, number of actions and total size
+     * (e.g. HadoopRDD[0] --> (2x action, 2.54 MB)
+     */
+    public String toStringWithAttributes() {
+        StringBuilder builder = new StringBuilder();
+        for(RDD<?> rdd: adjacencyList.keySet())
+        {
+            String id = this.getRDDIdentifier(rdd);
+            int nactions = rddToActionCount.get(rdd);
+            double mb = 1.0 * rddToSize.get(rdd) / 1_048_576;
+            String attributes = String.format("(%dx action, %.2f MB)", nactions, mb);
+            builder.append( String.format("%s --> %s\n", id, attributes) );
+        }
+        return builder.toString();
     }
 }

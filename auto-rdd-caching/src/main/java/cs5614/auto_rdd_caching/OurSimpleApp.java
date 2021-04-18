@@ -37,7 +37,7 @@ public class OurSimpleApp {
         System.out.println(dag3.toLocationsString());
         System.out.println(dag3.toRDDIdentifierString());
         dag3.mapRDDToAttributes();
-        dag3.printDAGWithAttributes();
+        System.out.println(dag3.toStringWithAttributes());
         Map<RDD<?>, Integer> actionRDDs4 = ExampleSparkJobs.job4(sc, true);
         DAG dag4 = new DAG(actionRDDs4);
         System.out.println("DAG: " + dag4);
