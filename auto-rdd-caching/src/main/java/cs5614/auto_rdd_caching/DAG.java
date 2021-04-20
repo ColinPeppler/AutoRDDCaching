@@ -20,7 +20,7 @@ public class DAG {
     }
     */
     private Map<RDD<?>, List<RDD<?>>> adjacencyList;
-    private Map<RDD<?>, Integer> actionRDDs;
+    private final Map<RDD<?>, Integer> actionRDDs;
 
     /**
      * Maps for storing RDD node attributes (e.g. number of actions or size)
@@ -31,7 +31,7 @@ public class DAG {
     /**
      * Get a list of dependencies of this RDD
      * @param rdd: the RDD to examine
-     * @return: a list of dependencies
+     * @return a list of dependencies
      */
     private List<Dependency<?>> getDependenciesList(RDD<?> rdd)
     {
@@ -84,6 +84,7 @@ public class DAG {
         {
              this.addDependenciesToDAG(actionRDD);
         }
+        this.mapRDDToAttributes();
     }
 
     /**
@@ -197,8 +198,8 @@ public class DAG {
      */
     public void sortDAGByID()
     {
-        Map<RDD<?>, List<RDD<?>>> sortedMap = new TreeMap<RDD<?>, List<RDD<?>>>(
-            (RDD<?> rdd1, RDD<?> rdd2)->Integer.compare(rdd1.id(), rdd2.id())
+        Map<RDD<?>, List<RDD<?>>> sortedMap = new TreeMap<>(
+                Comparator.comparingInt(RDD::id)
         );
         for(Map.Entry<RDD<?>, List<RDD<?>>> entry: this.adjacencyList.entrySet())
         {
@@ -211,9 +212,9 @@ public class DAG {
     /**
      * DAG Traversal Begins Here
      */
-    public void mapRDDToAttributes()
+    private void mapRDDToAttributes()
     {
-        this.rddToActionCount = new HashMap<RDD<?>, Integer>();
+        this.rddToActionCount = new HashMap<>();
         // populate maps with RDDs in DAG
         for(RDD<?> rdd: adjacencyList.keySet())
         {
@@ -267,8 +268,8 @@ public class DAG {
             long cumulativeSize =
                 this.getAncestors(rdd)
                 .stream()
-                .mapToLong(ancestor -> SizeEstimator.estimate(ancestor))
-                .reduce(0, (a,b)->a+b)
+                .mapToLong(SizeEstimator::estimate)
+                .reduce(0, Long::sum)
                 + SizeEstimator.estimate(rdd);
             this.rddToSize.put(rdd, cumulativeSize);
         }
@@ -278,7 +279,7 @@ public class DAG {
     /**
      * Gets all the ancestors of an RDD
      * @param rdd: RDD whose ancestors that are being found
-     * @return: a List<RDD<?>> containing all the ancestors for rdd
+     * @return a List<RDD<?>> containing all the ancestors for rdd
      */
     private List<RDD<?>> getAncestors(RDD<?> rdd) {
         Set<RDD<?>> ancestors = new HashSet<>();
@@ -306,5 +307,30 @@ public class DAG {
             builder.append( String.format("%s --> %s\n", id, attributes) );
         }
         return builder.toString();
+    }
+
+    /**
+     * Of the RDDs in the DAG, find the one that is expected to
+     * provide the biggest performance benefit if persisted
+     *
+     * @return the RDD to persist, or null if no RDD should be
+     * persisted
+     */
+    public RDD<?> getRDDToPersist()
+    {
+        RDD<?> toPersist = null;
+        long expectedBenefit = 0;
+        for (RDD<?> currRDD : this.adjacencyList.keySet())
+        {
+            int actionCount = this.rddToActionCount.get(currRDD);
+            long totalSize = this.rddToSize.get(currRDD);
+            long currExpectedBenefit = (actionCount - 1) * totalSize;
+            if (currExpectedBenefit > expectedBenefit)
+            {
+                expectedBenefit = currExpectedBenefit;
+                toPersist = currRDD;
+            }
+        }
+        return toPersist;
     }
 }

@@ -36,7 +36,6 @@ public class OurSimpleApp {
         System.out.println("DAG: " + dag3);
         System.out.println(dag3.toLocationsString());
         System.out.println(dag3.toRDDIdentifierString());
-        dag3.mapRDDToAttributes();
         System.out.println(dag3.toStringWithAttributes());
         Map<RDD<?>, Integer> actionRDDs4 = ExampleSparkJobs.job4(sc, true);
         DAG dag4 = new DAG(actionRDDs4);
@@ -47,6 +46,17 @@ public class OurSimpleApp {
         DAG dag5 = new DAG(actionRDDs5);
         System.out.println("DAG: " + dag5);
         System.out.println(dag5.toLocationsString());
+        Map<RDD<?>, Integer> actionRDDs6 = ExampleSparkJobs.job6(sc, true);
+        DAG dag6 = new DAG(actionRDDs6);
+        System.out.println("DAG: " + dag6);
+
+        System.out.println("Best RDDs To Persist:");
+        System.out.printf("Job 1: %s%n", dag1.getRDDToPersist());
+        System.out.printf("Job 2: %s%n", dag2.getRDDToPersist());
+        System.out.printf("Job 3: %s%n", dag3.getRDDToPersist());
+        System.out.printf("Job 4: %s%n", dag4.getRDDToPersist());
+        System.out.printf("Job 5: %s%n", dag5.getRDDToPersist());
+        System.out.printf("Job 6: %s%n", dag6.getRDDToPersist());
 
         int n_times = 20;
         long time = ExampleSparkJobs.timeNCalls(sc, n_times);

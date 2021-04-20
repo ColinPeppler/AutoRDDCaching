@@ -264,7 +264,7 @@ public class ExampleSparkJobs {
         JavaPairRDD<String, Boolean> flightidOnlySameTimezone =
             flightidSameTimezone.filter(Tuple2::_2);
         JavaRDD<String> flightidOnlySameTimezoneCol1 = flightidOnlySameTimezone
-            .map(Tuple2::_1);
+            .map(Tuple2::_1).cache(); // PERSIST LOCATION
 
         long scheduledSameTimezoneRows = flightidOnlySameTimezoneCol1.count();
         List<String> scheduledSameTimezone = flightidOnlySameTimezoneCol1
@@ -338,6 +338,36 @@ public class ExampleSparkJobs {
         return actionRDDs;
     }
 
+    /**
+     * Represents an example Spark job
+     * Uses only one action, so the getRDDToPersist() function
+     * should return null for this job.
+     *
+     * @param sc
+     *            the SparkContext
+     * @param verbose
+     *            if true, produce printed output
+     * @return Map of RDDs in the job that had actions called on them,
+     *         useful for lineage. The RDD reference is mapped to the number of
+     *         actions called on it
+     */
+    protected static Map<RDD<?>, Integer> job6(
+            JavaSparkContext sc,
+            boolean verbose)
+    {
+        JavaRDD<String> flightsData = DataReader.getFlights(sc);
+        JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
+                flightsData.mapToPair(row -> new ParseFlightFields().call(row));
+        List<Tuple2<String, Tuple3<String, String, String>>> collected = flightsTuples.collect();
+        if (verbose)
+        {
+            System.out.println(collected);
+        }
+
+        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
+        actionRDDs.put(flightsTuples.rdd(), 1);
+        return actionRDDs;
+    }
 
     /**
      * Runs a job many times and gets the total execution time

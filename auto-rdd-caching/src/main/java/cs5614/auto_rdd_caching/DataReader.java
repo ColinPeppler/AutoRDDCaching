@@ -14,7 +14,7 @@ public class DataReader {
      * Gets the airport data RDD
      *
      * @param sc: the SparkContext
-     * @return: the RDD for the airport data table with no header
+     * @return the RDD for the airport data table with no header
      */
     public static JavaRDD<String> getAirportData(JavaSparkContext sc)
     {
@@ -28,7 +28,7 @@ public class DataReader {
      * Gets the flights RDD
      *
      * @param sc: the SparkContext
-     * @return: the RDD for the flights table with no header
+     * @return the RDD for the flights table with no header
      */
     public static JavaRDD<String> getFlights(JavaSparkContext sc)
     {
