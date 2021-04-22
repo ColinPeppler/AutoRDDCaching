@@ -22,12 +22,12 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job1(
-        JavaSparkContext sc,
+    protected static void job1(
+        JavaSparkContext sc, MaterializationCounter c,
         boolean verbose) {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -47,9 +47,9 @@ public class ExampleSparkJobs {
 
         // 4. Collect data
         List<Tuple2<String, Tuple4<String, Double, Double, String>>> airportDataMaterialized =
-            airportsInAsiaTz.collect();
+            (List<Tuple2<String, Tuple4<String, Double, Double, String>>>)c.collect(airportsInAsiaTz);
 
-        long nrows = airportData.count();
+        long nrows = c.count(airportData); 
         if (verbose) {
             System.out.printf("# of airports in original csv: %d \n", nrows);
         }
@@ -59,11 +59,6 @@ public class ExampleSparkJobs {
                 System.out.println(tup.toString());
             }
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(airportData.rdd(), 1);
-        actionRDDs.put(airportsInAsiaTz.rdd(), 1);
-        return actionRDDs;
     }
 
 
@@ -74,12 +69,12 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job2(
-        JavaSparkContext sc,
+    protected static void job2( 
+        JavaSparkContext sc, MaterializationCounter c,
         boolean verbose) {
         // 1. Get csv data and filter out header
         // Verbose function
@@ -100,10 +95,11 @@ public class ExampleSparkJobs {
         }
 
         // 5. Collect data
-        List<Tuple2<Double, Double>> airportDataMaterialized = airportLatLong
-            .collect();
+        List<Tuple2<Double, Double>> airportDataMaterialized = 
+            (List<Tuple2<Double, Double>>)c.collect(airportLatLong);
+            
 
-        long nrows = airportData.count();
+        long nrows = c.count(airportData);
         if (verbose) {
             System.out.printf("# of airports in original csv: %d \n", nrows);
         }
@@ -113,11 +109,6 @@ public class ExampleSparkJobs {
                 System.out.println(tup.toString());
             }
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(airportLatLong.rdd(), 1);
-        actionRDDs.put(airportData.rdd(), 1);
-        return actionRDDs;
     }
 
 
@@ -128,12 +119,12 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job3(
-        JavaSparkContext sc,
+    protected static void job3(
+        JavaSparkContext sc, MaterializationCounter c,
         boolean verbose) {
         // Get csv data and filter out header
         // Verbose function
@@ -171,9 +162,9 @@ public class ExampleSparkJobs {
 
         // Collect data
         List<Tuple2<String, Tuple2<Double, Double>>> airportDataMaterialized =
-            latLongAvgByCode.collect();
+            (List<Tuple2<String, Tuple2<Double, Double>>>)c.collect(latLongAvgByCode);
 
-        long nrows = airportData.count();
+        long nrows = c.count(airportData);
         if (verbose) {
             System.out.printf("# of airports in original csv: %d \n", nrows);
         }
@@ -183,11 +174,6 @@ public class ExampleSparkJobs {
                 System.out.println(tup.toString());
             }
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(latLongAvgByCode.rdd(), 1);
-        actionRDDs.put(airportData.rdd(), 1);
-        return actionRDDs;
     }
 
 
@@ -198,12 +184,12 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job4(
-        JavaSparkContext sc,
+    protected static void job4(
+        JavaSparkContext sc, MaterializationCounter c,
         boolean verbose) {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaRDD<String> airportsData = DataReader.getAirportData(sc);
@@ -212,8 +198,8 @@ public class ExampleSparkJobs {
         JavaPairRDD<String, Tuple4<String, Double, Double, String>> airportsTuples =
             airportsData.mapToPair(row -> new ParseAirportFields().call(row));
 
-        long flightRows = flightsData.count();
-        long airportRows = airportsData.count();
+        long flightRows = c.count(flightsData);
+        long airportRows = c.count(flightsData);
         if (verbose) {
             System.out.printf("There are %d flights and %d airports%n",
                 flightRows, airportRows);
@@ -222,12 +208,11 @@ public class ExampleSparkJobs {
         JavaPairRDD<String, Tuple3<String, String, String>> scheduledFlights =
             flightsTuples.filter(row -> row._2()._3().equals("Scheduled"));
 
-        long scheduledFlightRows = scheduledFlights.count();
+        long scheduledFlightRows = c.count(scheduledFlights);
         if (verbose) {
             System.out.printf("%d of the flights are scheduled%n",
                 scheduledFlightRows);
         }
-
         JavaPairRDD<String, String> airportTimezones = airportsTuples.mapToPair(
             row -> new Tuple2<>(row._1(), row._2()._4()));
         JavaPairRDD<String, String> arrAirportFlightids = flightsTuples
@@ -261,14 +246,15 @@ public class ExampleSparkJobs {
         JavaPairRDD<String, Boolean> flightidSameTimezone =
             flightidDeptTimezoneArrTimezone.mapToPair(row -> new Tuple2<>(row
                 ._1(), row._2()._1().equals(row._2()._2())));
+        
         JavaPairRDD<String, Boolean> flightidOnlySameTimezone =
-            flightidSameTimezone.filter(Tuple2::_2);
+            flightidSameTimezone.filter(row -> row._2().equals(true));
         JavaRDD<String> flightidOnlySameTimezoneCol1 = flightidOnlySameTimezone
-            .map(Tuple2::_1).cache(); // PERSIST LOCATION
-
-        long scheduledSameTimezoneRows = flightidOnlySameTimezoneCol1.count();
-        List<String> scheduledSameTimezone = flightidOnlySameTimezoneCol1
-            .collect();
+            .map(row -> row._1()).cache(); //PERSIST LOCATION -> DAG will then
+                                           // pick another location to persist
+        long scheduledSameTimezoneRows = c.count(flightidOnlySameTimezoneCol1);
+        List<String> scheduledSameTimezone = (List<String>)c.collect(flightidOnlySameTimezoneCol1);
+        
         if (verbose) {
             System.out.printf(
                 "%d Scheduled flights have a departure timezone equal to the arrival timezone%n",
@@ -276,13 +262,6 @@ public class ExampleSparkJobs {
             System.out.println("Here they are:");
             System.out.println(scheduledSameTimezone);
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(flightsData.rdd(), 1);
-        actionRDDs.put(airportsData.rdd(), 1);
-        actionRDDs.put(scheduledFlights.rdd(), 1);
-        actionRDDs.put(flightidOnlySameTimezoneCol1.rdd(), 2);
-        return actionRDDs;
     }
 
 
@@ -293,18 +272,18 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job5(
-        JavaSparkContext sc,
+    protected static void job5(
+        JavaSparkContext sc, MaterializationCounter c,
         boolean verbose) {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
             flightsData.mapToPair(row -> new ParseFlightFields().call(row));
 
-        long n_flights = flightsTuples.count();
+        long n_flights = c.count(flightsTuples);//flightsTuples.count();
         if (verbose) {
             System.out.printf("There are %d flights %n", n_flights);
         }
@@ -316,8 +295,9 @@ public class ExampleSparkJobs {
             row -> new Tuple2<>(row._2(), 1));
         JavaPairRDD<String, Integer> destArrCount = destArrOne.reduceByKey(
             Integer::sum);
-        List<Tuple2<String, Integer>> destArrCountMaterialized = destArrCount
-            .collect();
+        List<Tuple2<String, Integer>> destArrCountMaterialized = 
+            (List<Tuple2<String, Integer>>)c.collect(destArrCount);
+            
         if (verbose) {
             System.out.println(destArrCountMaterialized);
         }
@@ -327,15 +307,10 @@ public class ExampleSparkJobs {
                 (row._2() % 2 == 0) ? (row._2() / 2) : (3 * row._2() + 1)));
         }
         List<Tuple2<String, Integer>> destArrCountHailstoneMaterialized =
-            destArrCount.collect();
+            (List<Tuple2<String, Integer>>)c.collect(destArrCount);
         if (verbose) {
             System.out.println(destArrCountHailstoneMaterialized);
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(flightsTuples.rdd(), 1);
-        actionRDDs.put(destArrCount.rdd(), 2);
-        return actionRDDs;
     }
 
     /**
@@ -347,26 +322,24 @@ public class ExampleSparkJobs {
      *            the SparkContext
      * @param verbose
      *            if true, produce printed output
-     * @return Map of RDDs in the job that had actions called on them,
-     *         useful for lineage. The RDD reference is mapped to the number of
-     *         actions called on it
+     * @param c Class that keeps a Map of RDDs in the job that had actions 
+     *         called on them, useful for lineage. The RDD reference is mapped 
+     *         to the number of actions called on it.
      */
-    protected static Map<RDD<?>, Integer> job6(
-            JavaSparkContext sc,
+    protected static void job6(
+            JavaSparkContext sc, MaterializationCounter c,
             boolean verbose)
     {
         JavaRDD<String> flightsData = DataReader.getFlights(sc);
         JavaPairRDD<String, Tuple3<String, String, String>> flightsTuples =
                 flightsData.mapToPair(row -> new ParseFlightFields().call(row));
-        List<Tuple2<String, Tuple3<String, String, String>>> collected = flightsTuples.collect();
+        List<Tuple2<String, Tuple3<String, String, String>>> collected = 
+            (List<Tuple2<String, Tuple3<String, String, String>>>)c.collect(flightsTuples);
+        
         if (verbose)
         {
             System.out.println(collected);
         }
-
-        Map<RDD<?>, Integer> actionRDDs = new HashMap<>();
-        actionRDDs.put(flightsTuples.rdd(), 1);
-        return actionRDDs;
     }
 
     /**
@@ -378,10 +351,12 @@ public class ExampleSparkJobs {
      *            the number of times to run
      * @return the total execution time in nanoseconds
      */
-    public static long timeNCalls(JavaSparkContext sc, int n_times) {
+    public static long timeNCalls(JavaSparkContext sc, MaterializationCounter c,
+        int n_times) {
+        
         long startTime = System.nanoTime();
         for (int i = 0; i < n_times; i++) {
-            job4(sc, false); // insert function call here
+            job4(sc, c, false); // insert function call here
         }
         long endTime = System.nanoTime();
         return endTime - startTime;

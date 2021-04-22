@@ -8,8 +8,8 @@ import org.apache.spark.api.java.function.Function;
  * Is responsible for reading data RDDs from the files
  */
 public class DataReader {
-    //private static final String DATA_DIR = "auto-rdd-caching/data/";      // relative to AutoRDDCaching
-    private static final String DATA_DIR = "data/"; // Arash's file path
+    private static final String DATA_DIR = "auto-rdd-caching/data/";      // relative to AutoRDDCaching
+    //private static final String DATA_DIR = "data/"; // Arash's file path
     /**
      * Gets the airport data RDD
      *
