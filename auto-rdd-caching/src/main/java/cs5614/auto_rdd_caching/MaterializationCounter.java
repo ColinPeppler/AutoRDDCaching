@@ -6,10 +6,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDDLike;
-//import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.Function2;
-//import org.apache.spark.api.java.function.VoidFunction;
+import org.apache.spark.api.java.function.VoidFunction;
 import org.apache.spark.rdd.RDD;
+import scala.Tuple2;
 
 /**
  * This class performs the materialization actions for an RDD (Ex. collect())
@@ -124,20 +124,11 @@ public class MaterializationCounter {
         return JavaPairActionRDD.countByKey();
     }
     
-    /*// Both functions do not work
-    public void saveAsHadoopFile(JavaPairRDD<?, ?> JavaPairActionRDD,
-        String path,
-        Class<?> keyClass,
-        Class<?> valueClass,
-        Class<Object> outputFormatClass){
-        this.putRDDInMap(JavaPairActionRDD);
-        JavaPairActionRDD.saveAsHadoopFile(path, keyClass, valueClass, outputFormatClass);
-    }
-    public void foreach(JavaPairRDD<?, ?> JavaPairActionRDD, VoidFunction<?> f){
+    public void foreach(JavaPairRDD<Object, Object> JavaPairActionRDD, VoidFunction<Tuple2<Object, Object>> f){
         this.putRDDInMap(JavaPairActionRDD);
         JavaPairActionRDD.foreach(f);
     }
-    */
+    
     
     /**
      * Gets the RDDs that had previous actions called upon them for materialization
