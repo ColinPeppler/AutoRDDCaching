@@ -14,7 +14,6 @@ public class OurSimpleApp {
     
     public static void main( String[] args ) {
         System.out.println("##### The Beginning #####");
-        //System.setProperty("hadoop.home.dir", "C:\\spark-3.1.1-bin-hadoop2.7"); // Arash's filePath
 
         SparkConf conf = new SparkConf()
             .setAppName("Our Simple App")
