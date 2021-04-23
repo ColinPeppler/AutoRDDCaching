@@ -20,47 +20,41 @@ public class OurSimpleApp {
             .setMaster("local[4]"); // runs on 4 worker threads
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
-        
-        ExampleSparkJobs.job1(sc, c, true);
+
+        System.out.println("### Job 1 ###");
+        ExampleSparkJobs.job1(sc, c, false);
         DAG dag1 = new DAG(c.getActionRDDs());
-        System.out.println("DAG: " + dag1);
-        System.out.println("---");
-        System.out.println(dag1.toLocationsString());
         System.out.println(dag1.toRDDIdentifierString());
-        System.out.println(dag1.toString());
         c.clearActionRDDs();
-        
-        ExampleSparkJobs.job2(sc, c, true);
+
+        System.out.println("### Job 2 ###");
+        ExampleSparkJobs.job2(sc, c, false);
         DAG dag2 = new DAG(c.getActionRDDs());
-        System.out.println("DAG: " + dag2);
-        System.out.println(dag2.toLocationsString());
-        c.clearActionRDDs(); 
-        
-        ExampleSparkJobs.job3(sc, c, true);
-        DAG dag3 = new DAG(c.getActionRDDs());
-        dag3.sortDAGByID();
-        System.out.println("DAG: " + dag3);
-        System.out.println(dag3.toLocationsString());
-        System.out.println(dag3.toRDDIdentifierString());
-        System.out.println(dag3.toStringWithAttributes());
+        System.out.println(dag2.toRDDIdentifierString());
         c.clearActionRDDs();
-        
-        ExampleSparkJobs.job4(sc, c, true); 
+
+        System.out.println("### Job 3 ###");
+        ExampleSparkJobs.job3(sc, c, false);
+        DAG dag3 = new DAG(c.getActionRDDs());
+        System.out.println(dag3.toRDDIdentifierString());
+        c.clearActionRDDs();
+
+        System.out.println("### Job 4 ###");
+        ExampleSparkJobs.job4(sc, c, false);
         DAG dag4 = new DAG(c.getActionRDDs());
-        System.out.println("DAG: " + dag4);
-        System.out.println(dag4.toLocationsString());
         System.out.println(dag4.toRDDIdentifierString());
         c.clearActionRDDs();
-        
-        ExampleSparkJobs.job5(sc, c, true);
+
+        System.out.println("### Job 5 ###");
+        ExampleSparkJobs.job5(sc, c, false);
         DAG dag5 = new DAG(c.getActionRDDs());
-        System.out.println("DAG: " + dag5);
-        System.out.println(dag5.toLocationsString());
+        System.out.println(dag5.toRDDIdentifierString());
         c.clearActionRDDs();
-        
-        ExampleSparkJobs.job6(sc, c, true);
+
+        System.out.println("### Job 6 ###");
+        ExampleSparkJobs.job6(sc, c, false);
         DAG dag6 = new DAG(c.getActionRDDs());
-        System.out.println("DAG: " + dag6);
+        System.out.println(dag6.toRDDIdentifierString());
         c.clearActionRDDs();
         
         System.out.println("Best RDDs To Persist:");
