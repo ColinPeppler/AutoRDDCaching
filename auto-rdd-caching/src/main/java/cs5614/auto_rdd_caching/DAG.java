@@ -85,6 +85,7 @@ public class DAG {
              this.addDependenciesToDAG(actionRDD);
         }
         this.mapRDDToAttributes();
+        this.sortDAGByID();
     }
 
     /**
