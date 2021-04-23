@@ -4,15 +4,12 @@ import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.function.Function;
-import org.apache.spark.rdd.RDD;
 
 import scala.Tuple2;
 import scala.Tuple3;
 import scala.Tuple4;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class ExampleSparkJobs {
     /**
